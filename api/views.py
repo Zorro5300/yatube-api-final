@@ -14,6 +14,9 @@ class PostViewSet(viewsets.ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ['group']
 
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
+
 
 class GroupViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Group.objects.all()
@@ -47,6 +50,3 @@ class CommentViewSet(viewsets.ModelViewSet):
         post_id = self.kwargs.get('post_id')
         post = Post.objects.get(id=post_id)
         serializer.save(author=self.request.user, post=post)
-
-    def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
