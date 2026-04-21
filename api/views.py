@@ -1,3 +1,4 @@
+from rest_framework import filters
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, viewsets
 from posts.models import Follow, Group, Post, Comment
@@ -24,6 +25,8 @@ class GroupViewSet(viewsets.ReadOnlyModelViewSet):
 class FollowViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [filters.SearchFilter]  # ← добавьте эту строку
+    search_fields = ['following__username', 'user__username']
 
     def get_queryset(self):
         return Follow.objects.filter(user=self.request.user)
@@ -35,6 +38,20 @@ class FollowViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthorOrReadOnlyPermission]
+
+    def get_queryset(self):
+        post_id = self.kwargs.get('post_id')
+        return Comment.objects.filter(post_id=post_id)
+
+    def perform_create(self, serializer):
+        post_id = self.kwargs.get('post_id')
+        post = Post.objects.get(id=post_id)
+        serializer.save(author=self.request.user, post=post)
+
+class CommentViewSet(viewsets.ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthorOrReadOnlyPermission]
+    lookup_field = 'id'
 
     def get_queryset(self):
         post_id = self.kwargs.get('post_id')
